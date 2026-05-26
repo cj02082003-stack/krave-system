@@ -1,56 +1,185 @@
-import React from 'react';
+"use client";
+
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { supabase } from "@/app/lib/supabase";
+import { useRouter } from "next/navigation";
 export default function LandingPage() {
+  const router = useRouter();
+
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+
+    checkUser();
+
+  }, []);
+
+  async function checkUser() {
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+
+      router.push("/auth/login");
+      return;
+
+    }
+
+    setUser(session.user);
+
+  }
+
+  async function handleLogout() {
+
+    await supabase.auth.signOut();
+
+    alert("Logged out successfully");
+
+    router.push("/auth/login");
+
+  }
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900">
       
       {/* --- NAVIGATION --- */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 shadow-sm">
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
           <div className="flex justify-between items-center h-16 sm:h-20">
+
             {/* Logo */}
+
             <div className="flex-shrink-0 flex items-center gap-2 cursor-pointer">
+
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                  />
+
                 </svg>
+
               </div>
-              <span className="font-bold text-xl sm:text-2xl tracking-tight text-slate-900">
-                Krave<span className="text-blue-600">System</span>
+
+              <span className="font-bold text-xl">
+
+                Krave
+                <span className="text-blue-600">
+                  System
+                </span>
+
               </span>
+
             </div>
-            
-            {/* Desktop Nav */}
+
+            {/* NAV */}
+
             <nav className="hidden lg:flex space-x-8">
-              <a href="#" className="text-blue-600 font-semibold">Home</a>
-              <a href="#" className="text-slate-600 hover:text-blue-600 transition font-medium">Menu</a>
-              <a href="#" className="text-slate-600 hover:text-blue-600 transition font-medium">How It Works</a>
-              <a href="#" className="text-slate-600 hover:text-blue-600 transition font-medium">About Us</a>
-              <a href="#" className="text-slate-600 hover:text-blue-600 transition font-medium">Contact</a>
+
+              <a
+                href="#"
+                className="text-blue-600 font-semibold"
+              >
+                Home
+              </a>
+
+              <a
+                href="#"
+                className="text-slate-600 hover:text-blue-600"
+              >
+                Menu
+              </a>
+
+              <a
+                href="#"
+                className="text-slate-600 hover:text-blue-600"
+              >
+                About
+              </a>
+
             </nav>
 
-            {/* Actions */}
-            <div className="flex items-center gap-3 sm:gap-6">
-              <button className="text-slate-500 hover:text-blue-600 hidden sm:block transition">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              </button>
-              <button className="text-slate-500 hover:text-blue-600 relative transition">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                <span className="absolute -top-1 -right-2 bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm">3</span>
-              </button>
-              <Link
-                href="/auth/login"
-                className="hidden sm:inline-flex px-5 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+            {/* RIGHT */}
+
+            <div className="flex items-center gap-4">
+
+              {user ? (
+
+                <>
+
+                  <div className="hidden sm:flex items-center gap-2">
+
+                    <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+
+                      {user.email?.charAt(0).toUpperCase()}
+
+                    </div>
+
+                    <div>
+
+                      <p className="font-semibold text-sm">
+
+                        {
+                          user.user_metadata
+                            ?.full_name ||
+                          "User"
+                        }
+
+                      </p>
+
+                      <p className="text-xs text-slate-500">
+
+                        {user.email}
+
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  <button
+                    onClick={handleLogout}
+                    className="px-5 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
+                  >
+
+                    Logout
+
+                  </button>
+
+                </>
+
+              ) : (
+
+                <Link
+                  href="/auth/login"
+                  className="px-5 py-2 rounded-lg bg-blue-600 text-white"
                 >
-                Login
-              </Link>
-              {/* Mobile Hamburger */}
-              <button className="lg:hidden p-2 -mr-2 text-slate-500 hover:text-blue-600 transition">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-              </button>
+
+                  Login
+
+                </Link>
+
+              )}
+
             </div>
+
           </div>
+
         </div>
+
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-20">
@@ -61,11 +190,23 @@ export default function LandingPage() {
             <span className="inline-block bg-blue-100/50 text-blue-700 font-bold tracking-wider text-[10px] sm:text-xs px-3 py-1.5 rounded-full mb-5 sm:mb-6 uppercase border border-blue-200/50">
               Fast. Easy. Delicious.
             </span>
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-slate-900 leading-[1.15] mb-4 sm:mb-6 tracking-tight">
+            {/* <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-slate-900 leading-[1.15] mb-4 sm:mb-6 tracking-tight">
               Order Your <br className="hidden sm:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400">Favorites</span> in a <br className="hidden sm:block" />
               Few Clicks
-            </h1>
+            </h1> */}
+            <h1 className="text-4xl font-bold">
+
+            Welcome back,
+            {" "}
+            {
+              user?.user_metadata
+                ?.full_name
+            }
+
+            👋
+
+          </h1>
             <p className="text-slate-500 text-base sm:text-lg mb-8 sm:mb-10 max-w-md sm:max-w-lg mx-auto lg:mx-0">
               Discover great food, exclusive deals and fast delivery to your doorstep.
             </p>
