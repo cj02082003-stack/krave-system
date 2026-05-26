@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Krave System | Modern Ordering Solution",
-  description: "Streamline your business with the ultimate responsive ordering system.",
+  title: "Krave Kitchen | Southeast Asian Cuisine",
+  description: "Savor the flavor of authentic Asian cuisine, from savory Chinese dumplings to vibrant Thai noodles.",
 };
 
 export default function RootLayout({
@@ -16,7 +16,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body 
+        className={`${inter.className} bg-stone-50 text-stone-900 antialiased selection:bg-[#e4e7dd] selection:text-[#596643]`}
+      >
         {children}
       </body>
     </html>
