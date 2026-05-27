@@ -1,17 +1,85 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 
-export default function LandingPage() {
-  // State for the main cart tray using an array
-  const [cart, setCart] = useState<any[]>([]);
-  
-  // State for the temporary quantities on the product cards before adding to cart
-  const [localQuantities, setLocalQuantities] = useState<Record<string, number>>({});
+// Helper component for the TikTok-style jump and zip animation
+const FlyingImage = ({ id, startX, startY, endX, endY, img, onComplete }: any) => {
+  const [phase, setPhase] = useState('start');
 
-  // Handle local +/- buttons on product cards
+  useEffect(() => {
+    // Phase 1: Immediately pop up and scale slightly above the click
+    const popTimer = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setPhase('pop');
+      });
+    });
+
+    // Phase 2: Zip to the cart target
+    const flyTimer = setTimeout(() => {
+      setPhase('fly');
+    }, 250); // Hold the pop for a split second
+
+    // Phase 3: Cleanup and trigger cart bump
+    const doneTimer = setTimeout(() => {
+      onComplete(id);
+    }, 750); // Total animation time
+
+    return () => {
+      cancelAnimationFrame(popTimer);
+      clearTimeout(flyTimer);
+      clearTimeout(doneTimer);
+    };
+  }, [id, onComplete]);
+
+  // Dynamic styles based on the current animation phase
+  let style: React.CSSProperties = {
+    left: startX,
+    top: startY,
+    transform: 'translate(-50%, -50%) scale(0)',
+    opacity: 1,
+    transition: 'none'
+  };
+
+  if (phase === 'pop') {
+    // Jump up slightly from the button and scale up (TikTok pop effect)
+    style = {
+      left: startX,
+      top: startY - 80, // Jump 80px up
+      transform: 'translate(-50%, -50%) scale(1.1)',
+      opacity: 1,
+      transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' // Springy ease
+    };
+  } else if (phase === 'fly') {
+    // Zip rapidly to the target coordinates while shrinking
+    style = {
+      left: endX,
+      top: endY,
+      transform: 'translate(-50%, -50%) scale(0.1)',
+      opacity: 0.2,
+      transition: 'all 0.5s cubic-bezier(0.5, 0, 0.2, 1)' // Fast swooping ease
+    };
+  }
+
+  return (
+    <img
+      src={img}
+      className="fixed z- w-20 h-20 rounded-xl object-cover border-2 border-[#8b3a2b] shadow-2xl pointer-events-none"
+      style={style}
+      alt="flying-product"
+    />
+  );
+};
+
+export default function LandingPage() {
+  const [cart, setCart] = useState<any[]>([]);
+  const [localQuantities, setLocalQuantities] = useState<Record<string, number>>({});
+  const [flyingItems, setFlyingItems] = useState<any[]>([]);
+  
+  // State to trigger the landing "bump" effect on the Header icon AND trays
+  const [bumpTray, setBumpTray] = useState(false);
+
   const updateLocalQty = (itemName: string, delta: number) => {
     setLocalQuantities(prev => {
       const currentQty = prev[itemName] || 1;
@@ -20,42 +88,89 @@ export default function LandingPage() {
     });
   };
 
-  // Add the product to the main cart tray
   const addToCart = (item: any) => {
     const qtyToAdd = localQuantities[item.name] || 1;
     
     setCart(prevCart => {
       const existingItemIndex = prevCart.findIndex(cartItem => cartItem.id === item.name);
-      
       if (existingItemIndex >= 0) {
-        // Update quantity if item already exists in cart
         const updatedCart = [...prevCart];
         updatedCart[existingItemIndex].qty += qtyToAdd;
         return updatedCart;
       } else {
-        // Add new item to cart (parsing price string to number for calculation)
         const priceNum = parseFloat(item.price.replace(/,/g, ''));
         return [...prevCart, { ...item, id: item.name, qty: qtyToAdd, price: priceNum }];
       }
     });
     
-    // Reset local quantity back to 1 after adding
     setLocalQuantities(prev => ({ ...prev, [item.name]: 1 }));
   };
 
-  // Remove item from cart
+  const handleAddToCartClick = (e: React.MouseEvent, item: any) => {
+    // 1. Get click coordinates
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    // 2. Determine target coordinates
+    const isMobile = window.innerWidth < 1024;
+    let endX = window.innerWidth / 2;
+    let endY = 0;
+
+    if (isMobile) {
+      const mobileTray = document.getElementById('mobile-tray-btn');
+      if (mobileTray) {
+        const rect = mobileTray.getBoundingClientRect();
+        endX = rect.left + 40; // Aim for the badge area
+        endY = rect.top + rect.height / 2;
+      } else {
+        endY = window.innerHeight - 50;
+      }
+    } else {
+      const headerCart = document.getElementById('header-cart-icon');
+      if (headerCart) {
+        const rect = headerCart.getBoundingClientRect();
+        endX = rect.left + rect.width / 2;
+        endY = rect.top + rect.height / 2;
+      } else {
+        // Fallback to top right if header-cart-icon ID is missing in Header.tsx
+        endX = window.innerWidth - 60;
+        endY = 40;
+      }
+    }
+
+    // 3. Trigger flying animation
+    const id = Date.now() + Math.random().toString();
+    setFlyingItems(prev => [...prev, { id, startX, startY, endX, endY, img: item.img }]);
+
+    // 4. Update cart
+    addToCart(item);
+  };
+
+  const removeFlyingItem = (id: string) => {
+    setFlyingItems(prev => prev.filter(item => item.id !== id));
+    
+    // Trigger the bump effect when item lands
+    setBumpTray(true);
+    setTimeout(() => setBumpTray(false), 200); // Remove bump class after 200ms
+  };
+
   const handleRemoveFromCart = (id: string) => {
     setCart(prev => prev.filter(item => item.id !== id));
   };
 
-  // Derived calculations for the Tray
   const cartItemCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
   return (
     <div className="min-h-screen bg-[#e0d7c5] text-[#3a352a] font-sans selection:bg-[#596643]/20 selection:text-[#8b3a2b]">
       
-      <Header cartCount={cartItemCount} />
+      {/* --- RENDER ANIMATIONS --- */}
+      {flyingItems.map(item => (
+        <FlyingImage key={item.id} {...item} onComplete={removeFlyingItem} />
+      ))}
+
+      {/* Passing bumpTray to Header so the cart icon can flash/bounce */}
+      <Header cartCount={cartItemCount} bumpCartIcon={bumpTray} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-24">
         
@@ -155,7 +270,6 @@ export default function LandingPage() {
                       <span className="text-xs text-[#3a352a]/50">({item.reviews} reviews)</span>
                     </div>
                     
-                    {/* Action Area */}
                     <div className="flex items-center justify-between pt-5 border-t border-[#c2b9a7]/40">
                       <span className="font-serif font-bold text-2xl text-[#3a352a]">₱{item.price}</span>
                       <div className="flex items-center gap-2">
@@ -170,8 +284,8 @@ export default function LandingPage() {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                           </button>
                         </div>
-                        <button onClick={() => addToCart(item)} className="w-10 h-10 bg-[#596643] text-white rounded-full flex items-center justify-center transition-all duration-300 shadow-md shadow-[#596643]/20 group-hover:bg-[#8b3a2b] group-hover:shadow-[#8b3a2b]/30 group-hover:-translate-y-0.5">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button onClick={(e) => handleAddToCartClick(e, item)} className="w-10 h-10 bg-[#596643] text-white rounded-full flex items-center justify-center transition-all duration-300 shadow-md shadow-[#596643]/20 group-hover:bg-[#8b3a2b] group-hover:shadow-[#8b3a2b]/30 group-hover:-translate-y-0.5 active:scale-95">
+                          <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
                         </button>
@@ -217,7 +331,6 @@ export default function LandingPage() {
                       <span className="text-xs text-[#3a352a]/50">({item.reviews} reviews)</span>
                     </div>
                     
-                    {/* Action Area */}
                     <div className="flex items-center justify-between pt-5 border-t border-[#c2b9a7]/40">
                       <span className="font-serif font-bold text-2xl text-[#3a352a]">₱{item.price}</span>
                       <div className="flex items-center gap-2">
@@ -232,8 +345,8 @@ export default function LandingPage() {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                           </button>
                         </div>
-                        <button onClick={() => addToCart(item)} className="w-10 h-10 bg-[#596643] text-white rounded-full flex items-center justify-center transition-all duration-300 shadow-md shadow-[#596643]/20 group-hover:bg-[#8b3a2b] group-hover:shadow-[#8b3a2b]/30 group-hover:-translate-y-0.5">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button onClick={(e) => handleAddToCartClick(e, item)} className="w-10 h-10 bg-[#596643] text-white rounded-full flex items-center justify-center transition-all duration-300 shadow-md shadow-[#596643]/20 group-hover:bg-[#8b3a2b] group-hover:shadow-[#8b3a2b]/30 group-hover:-translate-y-0.5 active:scale-95">
+                          <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
                         </button>
@@ -278,7 +391,6 @@ export default function LandingPage() {
                       <span className="text-xs text-[#3a352a]/50">({item.reviews} reviews)</span>
                     </div>
                     
-                    {/* Action Area */}
                     <div className="flex items-center justify-between pt-5 border-t border-[#c2b9a7]/40">
                       <span className="font-serif font-bold text-2xl text-[#3a352a]">₱{item.price}</span>
                       <div className="flex items-center gap-2">
@@ -293,8 +405,8 @@ export default function LandingPage() {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                           </button>
                         </div>
-                        <button onClick={() => addToCart(item)} className="w-10 h-10 bg-[#596643] text-white rounded-full flex items-center justify-center transition-all duration-300 shadow-md shadow-[#596643]/20 group-hover:bg-[#8b3a2b] group-hover:shadow-[#8b3a2b]/30 group-hover:-translate-y-0.5">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button onClick={(e) => handleAddToCartClick(e, item)} className="w-10 h-10 bg-[#596643] text-white rounded-full flex items-center justify-center transition-all duration-300 shadow-md shadow-[#596643]/20 group-hover:bg-[#8b3a2b] group-hover:shadow-[#8b3a2b]/30 group-hover:-translate-y-0.5 active:scale-95">
+                          <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
                         </button>
@@ -310,14 +422,15 @@ export default function LandingPage() {
 
           {/* --- SIDEBAR ORDER SUMMARY --- */}
           <div className="lg:w-[30%] xl:w-[25%] hidden lg:block">
-            <div className="sticky top-40 bg-white rounded-[2rem] border border-[#c2b9a7]/50 shadow-2xl shadow-[#3a352a]/5 overflow-hidden">
+            <div 
+              className={`sticky top-40 bg-white rounded-[2rem] border border-[#c2b9a7]/50 shadow-2xl shadow-[#3a352a]/5 overflow-hidden transition-transform duration-200 ${bumpTray ? 'scale-[1.02] ring-4 ring-[#8b3a2b]/20' : 'scale-100'}`}
+            >
               <div className="bg-[#3a352a] p-8 text-center border-b-[6px] border-[#8b3a2b]">
                 <h3 className="font-serif text-2xl text-[#e0d7c5] font-bold">Your Tray</h3>
               </div>
               
               <div className="p-8">
                 {cart.length === 0 ? (
-                  /* Empty Cart State */
                   <div className="flex flex-col items-center justify-center py-14 text-center border-b border-dashed border-[#c2b9a7] mb-8">
                     <div className="w-20 h-20 bg-[#f4f1ea] rounded-full flex items-center justify-center text-[#c2b9a7] mb-5 shadow-inner">
                       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
@@ -325,7 +438,6 @@ export default function LandingPage() {
                     <p className="text-[#3a352a]/70 font-light text-sm leading-relaxed">Your tray is empty.<br/>Add some delicious food!</p>
                   </div>
                 ) : (
-                  /* Populated Cart State */
                   <div className="flex flex-col gap-4 border-b border-dashed border-[#c2b9a7] pb-8 mb-8 max-h-64 overflow-y-auto hide-scrollbar">
                     {cart.map(item => (
                       <div key={item.id} className="flex justify-between items-center group">
@@ -344,13 +456,11 @@ export default function LandingPage() {
                   </div>
                 )}
 
-                {/* Order Totals */}
                 <div className="space-y-4 mb-8 px-2">
                   <div className="flex justify-between text-sm text-[#3a352a]/80 font-light">
                     <span>Subtotal</span>
                     <span className="font-medium">₱{cartSubtotal.toFixed(2)}</span>
                   </div>
-                  {/* Delivery Fee Removed */}
                 </div>
 
                 <div className="flex justify-between items-end mb-8 pt-6 border-t border-[#c2b9a7]/50 px-2">
@@ -377,9 +487,14 @@ export default function LandingPage() {
 
       {/* --- MOBILE FLOATING CART BUTTON --- */}
       <div className="lg:hidden fixed bottom-6 left-0 right-0 px-4 z-50">
-        <button className="w-full bg-[#3a352a] text-[#e0d7c5] p-5 rounded-2xl shadow-2xl flex items-center justify-between font-bold uppercase tracking-widest text-xs border-2 border-[#596643]">
+        <button 
+          id="mobile-tray-btn" 
+          className={`w-full text-[#e0d7c5] p-5 rounded-2xl shadow-2xl flex items-center justify-between font-bold uppercase tracking-widest text-xs border-2 transition-all duration-200 ${
+            bumpTray ? 'bg-[#4a5537] border-[#8b3a2b] scale-105' : 'bg-[#3a352a] border-[#596643] scale-100'
+          }`}
+        >
           <div className="flex items-center gap-3">
-            <span className="bg-[#8b3a2b] text-white w-8 h-8 flex items-center justify-center rounded-full text-xs shadow-inner">
+            <span className={`text-white w-8 h-8 flex items-center justify-center rounded-full text-xs shadow-inner transition-colors duration-200 ${bumpTray ? 'bg-amber-500 text-black' : 'bg-[#8b3a2b]'}`}>
               {cartItemCount}
             </span>
             <span>View Tray</span>
