@@ -1,5 +1,7 @@
 'use client';
-
+import Link from "next/link";
+import { supabase } from "@/app/lib/supabase";
+import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -72,10 +74,6 @@ const FlyingImage = ({ id, startX, startY, endX, endY, img, onComplete }: any) =
   );
 };
 
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { supabase } from "@/app/lib/supabase";
-import { useRouter } from "next/navigation";
 export default function LandingPage() {
   const [cart, setCart] = useState<any[]>([]);
   const [localQuantities, setLocalQuantities] = useState<Record<string, number>>({});
