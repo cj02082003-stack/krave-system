@@ -3,6 +3,7 @@ import Link from "next/link";
 import { supabase } from "@/app/lib/supabase";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from 'react';
+import { User } from "@supabase/supabase-js";
 import Header from './components/Header';
 import Footer from './components/Footer';
 
@@ -75,6 +76,18 @@ const FlyingImage = ({ id, startX, startY, endX, endY, img, onComplete }: any) =
 };
 
 export default function LandingPage() {
+  // State for mobile tray visibility (not fully implemented in this snippet, but set up for future use)
+  const [showMobileTray, setShowMobileTray] = useState(false);
+
+  // Router for navigation after logout
+  const router = useRouter();
+
+  // User authentication and welcome state
+  const [user, setUser] = useState<User | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
+
+  // Cart state and local quantity selectors for each product card
   const [cart, setCart] = useState<any[]>([]);
   const [localQuantities, setLocalQuantities] = useState<Record<string, number>>({});
   const [flyingItems, setFlyingItems] = useState<any[]>([]);
@@ -163,6 +176,70 @@ export default function LandingPage() {
   const cartItemCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
+  // Check user session on mount and handle welcome/walkthrough logic
+  useEffect(() => {
+
+  checkUser();
+
+}, []);
+
+async function checkUser() {
+
+  const { data } = await supabase.auth.getSession();
+
+  if (data.session?.user) {
+
+    setUser(data.session.user);
+
+    // Warm welcome popup
+    const welcomed =
+      localStorage.getItem("krave-welcomed");
+
+    if (!welcomed) {
+
+      setShowWelcome(true);
+
+      localStorage.setItem(
+        "krave-welcomed",
+        "true"
+      );
+
+      setTimeout(() => {
+        setShowWelcome(false);
+      }, 4000);
+
+    }
+
+  } else {
+
+    // Guest walkthrough
+    const walkthroughDone =
+      localStorage.getItem(
+        "krave-walkthrough"
+      );
+
+    if (!walkthroughDone) {
+
+      setShowWalkthrough(true);
+
+    }
+
+  }
+
+}
+
+async function handleLogout() {
+
+  await supabase.auth.signOut();
+
+  localStorage.removeItem(
+    "krave-welcomed"
+  );
+
+  router.push("/auth/login");
+
+}
+
   return (
     <div className="min-h-screen bg-[#e0d7c5] text-[#3a352a] font-sans selection:bg-[#596643]/20 selection:text-[#8b3a2b]">
       
@@ -172,10 +249,90 @@ export default function LandingPage() {
       ))}
 
       {/* Passing bumpTray to Header so the cart icon can flash/bounce */}
-      <Header cartCount={cartItemCount} bumpCartIcon={bumpTray} />
+      {/* <Header cartCount={cartItemCount} bumpCartIcon={bumpTray} /> */}
+      <Header
+        cartCount={cartItemCount}
+        bumpCartIcon={bumpTray}
+        user={user}
+        onLogout={handleLogout}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-24">
         
+        {/* --- MOBILE PERSONALIZED WELCOME --- */}
+        {user && (
+
+          <section className="lg:hidden mb-6">
+
+            <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#596643] via-[#4f5c3b] to-[#3a352a] p-6 shadow-2xl border border-white/10">
+
+              {/* Decorative Blur */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#8b3a2b]/30 rounded-full blur-3xl"></div>
+
+              <div className="relative z-10 flex items-center gap-4">
+
+                {/* Avatar */}
+                <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+
+                  {user.user_metadata?.full_name
+                    ?.charAt(0)
+                    ?.toUpperCase() || "K"}
+
+                </div>
+
+                {/* Text */}
+                <div className="flex-1">
+
+                  <p className="text-[#e0d7c5]/70 text-xs uppercase tracking-[0.2em] font-bold">
+                    Welcome Back
+                  </p>
+
+                  <h2 className="text-white text-2xl font-bold leading-tight mt-1">
+                    {user.user_metadata?.full_name || "Food Lover"} 👋
+                  </h2>
+
+                  <p className="text-[#e0d7c5]/80 text-sm mt-1 leading-relaxed">
+                    Ready for your next delicious order today?
+                  </p>
+
+                </div>
+
+              </div>
+
+              {/* Bottom Stats */}
+              <div className="relative z-10 mt-6 grid grid-cols-2 gap-3">
+
+                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+
+                  <p className="text-[#e0d7c5]/70 text-[10px] uppercase tracking-widest font-bold">
+                    Tray Items
+                  </p>
+
+                  <h3 className="text-white text-2xl font-bold mt-1">
+                    {cartItemCount}
+                  </h3>
+
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+
+                  <p className="text-[#e0d7c5]/70 text-[10px] uppercase tracking-widest font-bold">
+                    Current Total
+                  </p>
+
+                  <h3 className="text-white text-2xl font-bold mt-1">
+                    ₱{cartSubtotal.toFixed(0)}
+                  </h3>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </section>
+
+        )}
         {/* --- ORDERING HERO BANNER --- */}
         <section className="mb-12">
           <div className="bg-[#3a352a] rounded-[2rem] overflow-hidden relative flex flex-col md:flex-row items-center shadow-2xl border border-[#c2b9a7]/20">
@@ -247,10 +404,10 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 mb-16">
               {[
-                { name: 'Kare Kare Bagnet', cat: 'Filipino Fusion', price: '380.00', rating: '4.9', reviews: '320', img: '/menu/kare-kare.png', badge: 'Must Try', desc: 'Traditional rich, savory peanut sauce served with crispy deep-fried pork belly instead of usual oxtail.' },
-                { name: 'Mongo Bagnet', cat: 'Filipino Fusion', price: '290.00', rating: '4.8', reviews: '150', img: '/menu/mongo-bagnet.png', desc: 'Hearty mung bean stew cooked with garlic, onions, tomatoes, topped with crispy bagnet.' },
-                { name: 'Grilled Pork Belly', cat: 'Filipino Classics', price: '310.00', rating: '4.9', reviews: '245', img: '/menu/pork-belly.png', badge: 'New', desc: 'Perfectly charred and marinated grilled pork belly served with our signature vinegar dip.' },
-                { name: 'Special BBQ Skewers', cat: 'Barbeque', price: '220.00', rating: '4.7', reviews: '188', img: '/menu/bbq-skewers.png', desc: 'Sweet and savory Filipino-style pork barbecue skewers, grilled to smoky perfection.' },
+                { name: 'Kare Kare Bagnet', cat: 'Filipino Fusion', price: '380.00', rating: '4.9', reviews: '320', img: '/assets/menu/kare-kare.png', badge: 'Must Try', desc: 'Traditional rich, savory peanut sauce served with crispy deep-fried pork belly instead of usual oxtail.' },
+                { name: 'Mongo Bagnet', cat: 'Filipino Fusion', price: '290.00', rating: '4.8', reviews: '150', img: '/assets/menu/mongo-bagnet.png', desc: 'Hearty mung bean stew cooked with garlic, onions, tomatoes, topped with crispy bagnet.' },
+                { name: 'Grilled Pork Belly', cat: 'Filipino Classics', price: '310.00', rating: '4.9', reviews: '245', img: '/assets/menu/pork-belly.png', badge: 'New', desc: 'Perfectly charred and marinated grilled pork belly served with our signature vinegar dip.' },
+                { name: 'Special BBQ Skewers', cat: 'Barbeque', price: '220.00', rating: '4.7', reviews: '188', img: '/assets/menu/bbq-skewers.png', desc: 'Sweet and savory Filipino-style pork barbecue skewers, grilled to smoky perfection.' },
               ].map((item, idx) => (
                 <div key={idx} className="bg-white rounded-2xl border border-[#c2b9a7]/30 overflow-hidden hover:shadow-xl hover:border-[#596643]/30 transition-all duration-300 flex flex-col group">
                   <div className="relative h-56 overflow-hidden bg-[#e0d7c5]">
@@ -307,11 +464,11 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 mb-16">
               {[
-                { name: 'Pho Bo (Beef Pho)', cat: 'Noodles', price: '320.00', rating: '4.8', reviews: '210', img: '/menu/pho-bo.png', desc: 'Tender slices of quality beef presented in a flavorful broth with rice noodles, fresh herbs, and bean sprouts.' },
-                { name: 'Vietnamese Salad (Gỏi)', cat: 'Salad', price: '250.00', rating: '4.7', reviews: '115', img: '/menu/vietnamese-salad.png', desc: 'A light, fresh, and flavorful salad made with raw vegetables, herbs, and a tangy-sweet dressing.' },
-                { name: 'Gỏi Cuốn (Spring Rolls)', cat: 'Appetizers', price: '220.00', rating: '4.9', reviews: '400', img: '/menu/spring-rolls.png', badge: 'Bestseller', desc: 'Fresh rice paper rolls filled with shrimp, pork, vermicelli, and herbs, served with hoisin-peanut sauce.' },
-                { name: 'Beef Bánh Mì', cat: 'Sandwiches', price: '280.00', rating: '4.8', reviews: '305', img: '/menu/banh-mi.png', desc: 'Vietnamese-style sandwich made with crispy French baguette filled with savory, flavorful beef and veggies.' },
-                { name: 'Pad Thai', cat: 'Noodles', price: '260.00', rating: '4.9', reviews: '190', img: '/menu/pad-thai.png', desc: 'Classic stir-fried rice noodles with shrimp, peanuts, scrambled egg, and bean sprouts.' },
+                { name: 'Pho Bo (Beef Pho)', cat: 'Noodles', price: '320.00', rating: '4.8', reviews: '210', img: '/assets/menu/pho-bo.png', desc: 'Tender slices of quality beef presented in a flavorful broth with rice noodles, fresh herbs, and bean sprouts.' },
+                { name: 'Vietnamese Salad (Gỏi)', cat: 'Salad', price: '250.00', rating: '4.7', reviews: '115', img: '/assets/menu/vietnamese-salad.png', desc: 'A light, fresh, and flavorful salad made with raw vegetables, herbs, and a tangy-sweet dressing.' },
+                { name: 'Gỏi Cuốn (Spring Rolls)', cat: 'Appetizers', price: '220.00', rating: '4.9', reviews: '400', img: '/assets/menu/spring-rolls.png', badge: 'Bestseller', desc: 'Fresh rice paper rolls filled with shrimp, pork, vermicelli, and herbs, served with hoisin-peanut sauce.' },
+                { name: 'Beef Bánh Mì', cat: 'Sandwiches', price: '280.00', rating: '4.8', reviews: '305', img: '/assets/menu/banh-mi.png', desc: 'Vietnamese-style sandwich made with crispy French baguette filled with savory, flavorful beef and veggies.' },
+                { name: 'Pad Thai', cat: 'Noodles', price: '260.00', rating: '4.9', reviews: '190', img: '/assets/menu/pad-thai.png', desc: 'Classic stir-fried rice noodles with shrimp, peanuts, scrambled egg, and bean sprouts.' },
               ].map((item, idx) => (
                 <div key={idx} className="bg-white rounded-2xl border border-[#c2b9a7]/30 overflow-hidden hover:shadow-xl hover:border-[#596643]/30 transition-all duration-300 flex flex-col group">
                   <div className="relative h-56 overflow-hidden bg-[#e0d7c5]">
@@ -368,10 +525,10 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 mb-10">
               {[
-                { name: 'Chicken Cordon Bleu', cat: 'Main Course', price: '320.00', rating: '4.8', reviews: '210', img: '/menu/chicken-cordon-bleus.jpg', desc: 'Crispy breaded chicken stuffed with ham and cheese, served with a rich and creamy sauce.' },
-                { name: 'Hakaw', cat: 'Dimsum', price: '250.00', rating: '4.7', reviews: '115', img: '/menu/hakaw.jpg', desc: 'Delicate shrimp dumplings wrapped in translucent wonton skin and served with flavorful dipping sauce.' },
-                { name: 'Tamarind Prawn', cat: 'Monday Special', price: '350.00', rating: '4.9', reviews: '89', img: '/menu/tamarind-prawn.png', badge: 'Promo', desc: 'Plump, juicy prawns tossed in a perfectly balanced sweet and tangy tamarind glaze.' },
-                { name: 'Crab Rangoon', cat: 'Appetizers', price: '180.00', rating: '4.7', reviews: '156', img: '/menu/crab-rangoon.png', desc: 'Crispy golden fried wontons generously filled with cream cheese and real crab meat.' },
+                { name: 'Chicken Cordon Bleu', cat: 'Main Course', price: '320.00', rating: '4.8', reviews: '210', img: '/assets/menu/chicken-cordon-bleus.jpg', desc: 'Crispy breaded chicken stuffed with ham and cheese, served with a rich and creamy sauce.' },
+                { name: 'Hakaw', cat: 'Dimsum', price: '250.00', rating: '4.7', reviews: '115', img: '/assets/menu/hakaw.jpg', desc: 'Delicate shrimp dumplings wrapped in translucent wonton skin and served with flavorful dipping sauce.' },
+                { name: 'Tamarind Prawn', cat: 'Monday Special', price: '350.00', rating: '4.9', reviews: '89', img: '/assets/menu/tamarind-prawn.png', badge: 'Promo', desc: 'Plump, juicy prawns tossed in a perfectly balanced sweet and tangy tamarind glaze.' },
+                { name: 'Crab Rangoon', cat: 'Appetizers', price: '180.00', rating: '4.7', reviews: '156', img: '/assets/menu/crab-rangoon.png', desc: 'Crispy golden fried wontons generously filled with cream cheese and real crab meat.' },
               ].map((item, idx) => (
                 <div key={idx} className="bg-white rounded-2xl border border-[#c2b9a7]/30 overflow-hidden hover:shadow-xl hover:border-[#596643]/30 transition-all duration-300 flex flex-col group">
                   <div className="relative h-56 overflow-hidden bg-[#e0d7c5]">
@@ -489,8 +646,11 @@ export default function LandingPage() {
 
       {/* --- MOBILE FLOATING CART BUTTON --- */}
       <div className="lg:hidden fixed bottom-6 left-0 right-0 px-4 z-50">
-        <button 
-          id="mobile-tray-btn" 
+        <button
+          id="mobile-tray-btn"
+          onClick={() =>
+            setShowMobileTray(true)
+          }
           className={`w-full text-[#e0d7c5] p-5 rounded-2xl shadow-2xl flex items-center justify-between font-bold uppercase tracking-widest text-xs border-2 transition-all duration-200 ${
             bumpTray ? 'bg-[#4a5537] border-[#8b3a2b] scale-105' : 'bg-[#3a352a] border-[#596643] scale-100'
           }`}
@@ -504,6 +664,267 @@ export default function LandingPage() {
           <span className="font-serif text-lg text-white">₱{cartSubtotal.toFixed(2)}</span>
         </button>
       </div>
+      
+      {/* WELCOME MODAL */}
+      {showWelcome && user && (
+
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center animate-in fade-in zoom-in duration-300">
+
+            <div className="w-20 h-20 mx-auto rounded-full bg-[#596643] text-white flex items-center justify-center text-3xl mb-5">
+              🍜
+            </div>
+
+            <h2 className="text-3xl font-bold text-[#3a352a]">
+              Welcome Back!
+            </h2>
+
+            <p className="text-slate-500 mt-3">
+              Glad to see you again,
+              <span className="font-semibold text-[#596643]">
+                {" "}
+                {user.user_metadata?.full_name || "Food Lover"}
+              </span>
+            </p>
+
+          </div>
+
+        </div>
+
+      )}
+
+
+      {/* WALKTHROUGH MODAL */}
+      {showWalkthrough && (
+
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+
+          <div className="bg-white rounded-[2rem] max-w-lg w-full p-8 shadow-2xl">
+
+            <span className="bg-[#8b3a2b] text-white px-4 py-1 rounded-full text-xs uppercase tracking-widest font-bold">
+              Welcome Guest
+            </span>
+
+            <h2 className="text-4xl font-bold text-[#3a352a] mt-5 leading-tight">
+              Welcome to Krave Kitchen 🍜
+            </h2>
+
+            <p className="text-slate-500 mt-4 leading-relaxed">
+              Discover Southeast Asian flavors, add meals to your tray,
+              and enjoy a smooth ordering experience.
+            </p>
+
+            <div className="mt-8 space-y-3">
+
+              <div className="flex gap-3 items-start">
+                <div className="w-8 h-8 rounded-full bg-[#596643] text-white flex items-center justify-center text-sm">
+                  1
+                </div>
+                <p className="text-sm text-slate-600">
+                  Browse our chef specials and handcrafted dishes.
+                </p>
+              </div>
+
+              <div className="flex gap-3 items-start">
+                <div className="w-8 h-8 rounded-full bg-[#596643] text-white flex items-center justify-center text-sm">
+                  2
+                </div>
+                <p className="text-sm text-slate-600">
+                  Login or create your account to continue ordering.
+                </p>
+              </div>
+
+            </div>
+
+            <div className="flex gap-3 mt-10">
+
+              <button
+                onClick={() => {
+                  localStorage.setItem(
+                    "krave-walkthrough",
+                    "true"
+                  );
+
+                  setShowWalkthrough(false);
+                }}
+                className="flex-1 py-3 rounded-xl border border-slate-200"
+              >
+                Continue as Guest
+              </button>
+
+              <Link
+                href="/auth/login"
+                className="flex-1 py-3 rounded-xl bg-[#596643] text-white text-center"
+              >
+                Login
+              </Link>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {/* --- MOBILE TRAY DRAWER --- */}
+      {showMobileTray && (
+
+        <div className="lg:hidden fixed inset-0 z-[120]">
+
+          {/* BACKDROP */}
+          <div
+            onClick={() =>
+              setShowMobileTray(false)
+            }
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          />
+
+          {/* DRAWER */}
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] shadow-2xl max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-300">
+
+            {/* HANDLE */}
+            <div className="flex justify-center pt-3">
+              <div className="w-14 h-1.5 rounded-full bg-slate-300" />
+            </div>
+
+            {/* HEADER */}
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-200">
+
+              <div>
+
+                <h2 className="text-2xl font-bold text-[#3a352a]">
+                  Your Tray
+                </h2>
+
+                <p className="text-sm text-slate-500 mt-1">
+                  {cartItemCount} item(s)
+                </p>
+
+              </div>
+
+              <button
+                onClick={() =>
+                  setShowMobileTray(false)
+                }
+                className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition flex items-center justify-center"
+              >
+                ✕
+              </button>
+
+            </div>
+
+            {/* CONTENT */}
+            <div className="overflow-y-auto max-h-[50vh] px-6 py-5">
+
+              {cart.length === 0 ? (
+
+                <div className="py-16 text-center">
+
+                  <div className="w-20 h-20 mx-auto rounded-full bg-[#f4f1ea] flex items-center justify-center mb-5">
+                    🛒
+                  </div>
+
+                  <h3 className="text-xl font-bold text-[#3a352a]">
+                    Tray Empty
+                  </h3>
+
+                  <p className="text-slate-500 mt-2">
+                    Add delicious meals first.
+                  </p>
+
+                </div>
+
+              ) : (
+
+                <div className="space-y-4">
+
+                  {cart.map((item) => (
+
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-4 bg-[#f8f5ef] rounded-2xl p-4 border border-[#e0d7c5]"
+                    >
+
+                      <img
+                        src={item.img}
+                        alt={item.name}
+                        className="w-20 h-20 rounded-xl object-cover"
+                      />
+
+                      <div className="flex-1">
+
+                        <h3 className="font-bold text-[#3a352a] leading-tight">
+                          {item.name}
+                        </h3>
+
+                        <p className="text-sm text-[#596643] font-semibold mt-1">
+                          Qty: {item.qty}
+                        </p>
+
+                        <p className="text-lg font-bold text-[#8b3a2b] mt-2">
+                          ₱
+                          {(item.price * item.qty).toFixed(2)}
+                        </p>
+
+                      </div>
+
+                      {/* REMOVE BUTTON */}
+                      <button
+                        onClick={() =>
+                          handleRemoveFromCart(
+                            item.id
+                          )
+                        }
+                        className="w-11 h-11 rounded-full bg-red-100 hover:bg-red-200 transition flex items-center justify-center text-red-500"
+                      >
+                        🗑️
+                      </button>
+
+                    </div>
+
+                  ))}
+
+                </div>
+
+              )}
+
+            </div>
+
+            {/* FOOTER */}
+            <div className="border-t border-slate-200 p-6 bg-white">
+
+              <div className="flex justify-between items-center mb-5">
+
+                <span className="text-sm uppercase tracking-widest font-bold text-slate-500">
+                  Total
+                </span>
+
+                <span className="text-3xl font-bold text-[#8b3a2b]">
+                  ₱{cartSubtotal.toFixed(2)}
+                </span>
+
+              </div>
+
+              <button
+                disabled={cart.length === 0}
+                className={`w-full py-4 rounded-2xl text-white font-bold uppercase tracking-widest text-sm transition ${
+                  cart.length === 0
+                    ? "bg-slate-300"
+                    : "bg-[#596643] hover:bg-[#4a5537]"
+                }`}
+              >
+                Proceed to Checkout
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
 
       <Footer />
       

@@ -137,16 +137,16 @@ export default function LoginPage() {
     <div className="w-full max-w-6xl mx-auto overflow-hidden bg-white rounded-2xl lg:rounded-[32px] shadow-2xl border border-slate-200 grid grid-cols-1 lg:grid-cols-2">
 
       <div className="p-6 sm:p-8 md:p-12 flex flex-col justify-center">
-
+    
         <div className="flex items-center gap-3 mb-8">
 
-          <div className="w-12 h-12 rounded-xl overflow-hidden shadow-md">
+          <div className="w-24 h-24 rounded-full overflow-hidden">
 
             <Image
-              src="/assets/images/logo.png"
+              src="/logo.jpg"
               alt="Krave Logo"
-              width={50}
-              height={50}
+              width={100}
+              height={100}
               className="w-full h-full object-cover"
             />
 
@@ -336,11 +336,11 @@ export default function LoginPage() {
 
       </div>
 
-
+      {/* right side image */}
       <div className="hidden lg:block relative bg-black/5">
 
         <Image
-          src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80"
+          src="/assets/menu/pad-thai.png"
           alt="Food"
           fill
           className="object-cover"
@@ -382,5 +382,4 @@ export default function LoginPage() {
         )}
     </div>
   )
-
 }

@@ -1,14 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // Added cartCount and bumpCartIcon props
 export default function Header({ 
-  cartCount = 0, 
-  bumpCartIcon = false 
-}: { 
+  cartCount = 0,
+  bumpCartIcon = false,
+  user,
+  onLogout
+}: {
   cartCount?: number;
-  bumpCartIcon?: boolean; 
+  bumpCartIcon?: boolean;
+  user?: any;
+  onLogout?: () => void;
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -45,7 +51,9 @@ export default function Header({
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#596643] shadow-sm group-hover:scale-105 transition-transform duration-300 bg-white flex items-center justify-center">
               <img 
                 src="/logo.jpg" 
-                alt="Krave Kitchen Logo" 
+                alt="Krave Kitchen Logo"
+                width={100}
+                height={100}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
@@ -86,9 +94,36 @@ export default function Header({
             </button>
             
             <div className="hidden sm:flex items-center gap-4 border-l border-[#c2b9a7]/50 pl-6">
-              <button className="text-[#3a352a] font-bold tracking-widest text-xs uppercase hover:text-[#8b3a2b] transition-colors">
+              {/* <button className="text-[#3a352a] font-bold tracking-widest text-xs uppercase hover:text-[#8b3a2b] transition-colors">
                 Login
-              </button>
+              </button> */}
+              {user ? (
+
+                  <div className="flex items-center gap-3">
+
+                    <span className="text-xs font-bold uppercase text-[#596643]">
+                      Hi, {user.user_metadata?.full_name || "User"}
+                    </span>
+
+                    <button
+                      onClick={onLogout}
+                      className="px-6 py-2.5 text-xs font-bold tracking-widest uppercase text-[#3a352a] border border-[#c2b9a7] bg-transparent rounded hover:bg-[#c2b9a7]/20 hover:text-red-500 transition duration-300 shadow-sm text-center"
+                    >
+                      Logout
+                    </button>
+
+                  </div>
+
+                ) : (
+
+                  <Link
+                    href="/auth/login"
+                    className="text-[#3a352a] font-bold tracking-widest text-xs uppercase hover:text-[#8b3a2b] transition-colors"
+                  >
+                    Login
+                  </Link>
+
+                )}
               <button className="px-6 py-2.5 text-xs font-bold tracking-widest uppercase text-[#e0d7c5] bg-[#596643] rounded hover:bg-[#3a352a] hover:-translate-y-0.5 transition-all duration-300 shadow-md shadow-[#596643]/20">
                 Order Now
               </button>
@@ -128,9 +163,25 @@ export default function Header({
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
               View Cart ({cartCount})
             </button>
-            <button className="w-full max-w-xs px-6 py-4 text-sm font-bold tracking-widest uppercase text-[#3a352a] border border-[#c2b9a7] bg-transparent rounded hover:bg-[#c2b9a7]/20 transition duration-300 shadow-sm">
-              Login
-            </button>
+            {user ? (
+
+              <button
+                onClick={onLogout}
+                className="w-full max-w-xs px-6 py-4 text-sm font-bold tracking-widest uppercase text-red-500 border border-red-200 bg-white rounded hover:bg-red-50 transition duration-300 shadow-sm"
+              >
+                Logout
+              </button>
+
+            ) : (
+
+              <Link
+                href="/auth/login"
+                className="w-full max-w-xs px-6 py-4 text-sm font-bold tracking-widest uppercase text-[#3a352a] border border-[#c2b9a7] bg-transparent rounded hover:bg-[#c2b9a7]/20 transition duration-300 shadow-sm text-center"
+              >
+                Login
+              </Link>
+
+            )}
             <button className="w-full max-w-xs px-6 py-4 text-sm font-bold tracking-widest uppercase text-[#e0d7c5] bg-[#596643] rounded hover:bg-[#3a352a] transition duration-300 shadow-md">
               Order Now
             </button>
