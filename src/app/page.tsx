@@ -108,9 +108,13 @@ export default function LandingPage() {
     
     setCart(prevCart => {
       const existingItemIndex = prevCart.findIndex(cartItem => cartItem.id === item.name);
-      if (existingItemIndex >= 0) {
+        if (existingItemIndex >= 0) {
         const updatedCart = [...prevCart];
-        updatedCart[existingItemIndex].qty += qtyToAdd;
+        // ✅ FIX: Spread the specific item into a new object to avoid direct state mutation
+        updatedCart[existingItemIndex] = {
+          ...updatedCart[existingItemIndex],
+          qty: updatedCart[existingItemIndex].qty + qtyToAdd
+        };
         return updatedCart;
       } else {
         const priceNum = parseFloat(item.price.replace(/,/g, ''));
