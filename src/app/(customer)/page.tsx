@@ -4,8 +4,8 @@ import { supabase } from "@/app/lib/supabase";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from 'react';
 import { User } from "@supabase/supabase-js";
-import Header from './components/Header';
-import Footer from './components/Footer';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 // Helper component for the TikTok-style jump and zip animation
 const FlyingImage = ({ id, startX, startY, endX, endY, img, onComplete }: any) => {
