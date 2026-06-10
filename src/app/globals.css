@@ -4,13 +4,32 @@ html {
   scroll-behavior: smooth;
 }
 
-.no-scrollbar {
-  overflow-y: auto;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-}
-
-.no-scrollbar::-webkit-scrollbar {
+/* Custom smooth scrollbar treatment inside the sidebar container */
+.custom-scrollbar::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* .custom-scrollbar {
+  overflow-y: auto;
+  scrollbar-width: none; 
+  -ms-overflow-style: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+} */
