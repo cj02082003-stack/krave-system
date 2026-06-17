@@ -175,7 +175,7 @@ export default function BusinessReportsHubPage() {
             <div className="w-full h-14 bg-slate-50 rounded-2xl overflow-hidden flex p-1.5 border border-slate-100">
               {/* NET SETTLEMENT RATIO CHUNK */}
               <div 
-                className="h-full bg-[#E65100] rounded-xl flex items-center justify-center transition-all relative group"
+                className="h-full bg-[#596643] rounded-xl flex items-center justify-center transition-all relative group"
                 style={{ width: '97.5%' }}
               >
                 <span className="text-white text-[11px] font-black font-mono">97.5%</span>

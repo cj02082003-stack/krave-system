@@ -243,7 +243,7 @@ export default function PromosAndDiscountsPage() {
         
         <button 
           onClick={handleOpenCreateModal}
-          className="inline-flex items-center justify-center gap-2 bg-[#E65100] hover:bg-[#BF360C] text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md transition self-start sm:self-auto active:scale-95"
+          className="inline-flex items-center justify-center gap-2 bg-[#596643] hover:bg-[#3a352a] text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md transition self-start sm:self-auto active:scale-95"
         >
           <Plus className="h-4 w-4 stroke-[3]" />
           New Campaign

@@ -131,7 +131,7 @@ export default function SystemSettingsPage() {
         <button 
           onClick={handleGlobalSave}
           disabled={saving}
-          className="inline-flex items-center justify-center gap-2 bg-[#E65100] hover:bg-[#BF360C] text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md transition self-start sm:self-auto active:scale-95 disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 bg-[#596643] hover:bg-[#3a352a] text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md transition self-start sm:self-auto active:scale-95 disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 stroke-[2.5]" />}
           <span>Save Configurations</span>
@@ -232,7 +232,7 @@ export default function SystemSettingsPage() {
           <button
             type="button"
             onClick={() => setShowSecretKeys(!showSecretKeys)}
-            className="inline-flex items-center gap-1 text-[11px] font-black text-orange-600 hover:text-orange-700 uppercase tracking-wide transition"
+            className="inline-flex items-center gap-1 text-[11px] font-black text-bg-[#596643] hover:text-[#3a352a] uppercase tracking-wide transition"
           >
             {showSecretKeys ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             <span>View Secret keys</span>

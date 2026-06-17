@@ -338,7 +338,7 @@ export default function CustomerAccountsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search accounts directory..."
-              className="w-full bg-slate-50 border border-slate-200 pl-10 pr-4 py-2.5 rounded-xl text-xs font-semibold outline-none focus:border-orange-500 focus:bg-white transition"
+              className="w-full bg-slate-50 border border-slate-200 pl-10 pr-4 py-2.5 rounded-xl text-xs font-semibold outline-none focus:border-[#596643] focus:bg-white transition"
             />
           </div>
 
@@ -357,7 +357,7 @@ export default function CustomerAccountsPage() {
                     onClick={() => handleSelectCustomer(customer.id)}
                     className={`bg-white border p-4 rounded-2xl shadow-sm flex items-center justify-between gap-4 cursor-pointer transition-all active:scale-[0.99] ${
                       isSelected 
-                        ? 'border-orange-500 ring-1 ring-orange-500/20 shadow-sm' 
+                        ? 'border-[#596643] ring-1 ring-[#596643]/20 shadow-sm' 
                         : 'border-slate-100 hover:border-slate-300'
                     }`}
                   >
