@@ -2,22 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useCart } from '@/context/CartContext';
 
-// Added cartCount and bumpCartIcon props
 export default function Header({ 
-  cartCount = 0,
   bumpCartIcon = false,
   user,
   onLogout
 }: {
-  cartCount?: number;
   bumpCartIcon?: boolean;
   user?: any;
   onLogout?: () => void;
 }) {
+  const { cart } = useCart();
+  const [isMounted, setIsMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const pathname = usePathname();
+
+  const isHomePage = pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,6 +38,35 @@ export default function Header({
     }
   }, [isMobileMenuOpen]);
 
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Kunin ang count (kung ilan ang items sa cart)
+  const cartCount = isMounted ? cart.length : 0;
+
+  // SMART SCROLL FUNCTION: Ligtas na mag-ma-maniobra pababa sa dulo ng kasalukuyang page nang hindi lumilipat ng route
+  const handleVisitClick = (e: React.MouseEvent) => {
+    setIsMobileMenuOpen(false); // Siguraduhing magsasara ang mobile drawer menu kung sakaling doon kinlik
+
+    if (!isHomePage) {
+      e.preventDefault(); // Pipigilan natin ang default navigation papuntang homepage gamit ang Link href
+      
+      // Hahanapin natin ang element na may id="visit" (na dapat nakakabit sa labas o loob ng iyong Footer)
+      const visitSection = document.getElementById('visit');
+      
+      if (visitSection) {
+        visitSection.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        // Fallback kung sakaling hindi mahanap ang ID, dumeretso sa pinakailalim ng bintana kung nasaan ang Footer
+        window.scrollTo({
+          top: document.documentElement.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
+    }
+  };
+
   return (
     <header 
       className={`sticky top-0 z-50 transition-all duration-500 ease-in-out ${
@@ -47,7 +79,7 @@ export default function Header({
         <div className="flex justify-between items-center h-16 sm:h-20 transition-all duration-300">
           
           {/* Logo Area */}
-          <div className="flex-shrink-0 flex items-center gap-3 cursor-pointer group">
+          <Link href="/" className="flex-shrink-0 flex items-center gap-3 cursor-pointer group">
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#596643] shadow-sm group-hover:scale-105 transition-transform duration-300 bg-white flex items-center justify-center">
               <img 
                 src="/logo.jpg" 
@@ -65,19 +97,45 @@ export default function Header({
             <span className="font-serif font-bold text-xl sm:text-2xl tracking-widest text-[#3a352a] uppercase group-hover:text-[#596643] transition-colors">
               Krave<span className="text-[#596643] font-sans font-light tracking-normal ml-1 group-hover:text-[#8b3a2b] transition-colors">Kitchen</span>
             </span>
-          </div>
+          </Link>
           
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center space-x-10">
-            <a href="#" className="text-[#8b3a2b] font-medium tracking-widest uppercase text-xs border-b border-[#8b3a2b] pb-1 hover:opacity-80 transition">Discover</a>
-            <a href="#specials" className="text-[#596643] hover:text-[#8b3a2b] transition font-medium tracking-widest uppercase text-xs pb-1 relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 hover:after:w-full after:bg-[#8b3a2b] after:transition-all after:duration-300">Specials</a>
-            <a href="#menu" className="text-[#596643] hover:text-[#8b3a2b] transition font-medium tracking-widest uppercase text-xs pb-1 relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 hover:after:w-full after:bg-[#8b3a2b] after:transition-all after:duration-300">Menu</a>
-            <a href="#visit" className="text-[#596643] hover:text-[#8b3a2b] transition font-medium tracking-widest uppercase text-xs pb-1 relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 hover:after:w-full after:bg-[#8b3a2b] after:transition-all after:duration-300">Visit Us</a>
+            <Link 
+              href="/" 
+              className={`font-medium tracking-widest uppercase text-xs pb-1 transition ${
+                isHomePage ? 'text-[#8b3a2b] border-b border-[#8b3a2b] hover:opacity-80' : 'text-[#596643] hover:text-[#8b3a2b]'
+              }`}
+            >
+              Discover
+            </Link>
+
+            <Link 
+              href="/menu" 
+              className={`font-medium tracking-widest uppercase text-xs pb-1 transition relative after:absolute after:bottom-0 after:left-0 after:h-px after:transition-all after:duration-300 ${
+                pathname === '/menu' 
+                  ? 'text-[#8b3a2b] border-b border-[#8b3a2b]' 
+                  : 'text-[#596643] hover:text-[#8b3a2b] after:w-0 hover:after:w-full after:bg-[#8b3a2b]'
+              }`}
+            >
+              Menu
+            </Link>
+
+            {/* INTEGRATED INTELLIGENT VISIT LINK */}
+            <Link 
+              href={isHomePage ? '#visit' : '/#visit'} 
+              onClick={handleVisitClick}
+              className="text-[#596643] hover:text-[#8b3a2b] transition font-medium tracking-widest uppercase text-xs pb-1 relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 hover:after:w-full after:bg-[#8b3a2b] after:transition-all after:duration-300"
+            >
+              Visit Us
+            </Link>
           </nav>
 
           {/* Actions */}
           <div className="flex items-center gap-5 sm:gap-6">
-            <button 
+            {/* Palitan ang button ng Link */}
+            <Link 
+              href="/cart" 
               id="header-cart-icon" 
               className={`text-[#596643] hover:text-[#8b3a2b] relative transition-transform duration-200 hidden sm:block group ${
                 bumpCartIcon ? 'scale-125 text-[#8b3a2b]' : 'scale-100'
@@ -91,42 +149,36 @@ export default function Header({
                   {cartCount}
                 </span>
               )}
-            </button>
+            </Link>
             
             <div className="hidden sm:flex items-center gap-4 border-l border-[#c2b9a7]/50 pl-6">
-              {/* <button className="text-[#3a352a] font-bold tracking-widest text-xs uppercase hover:text-[#8b3a2b] transition-colors">
-                Login
-              </button> */}
               {user ? (
-
-                  <div className="flex items-center gap-3">
-
-                    <span className="text-xs font-bold uppercase text-[#596643]">
-                      Hi, {user.user_metadata?.full_name || "User"}
-                    </span>
-
-                    <button
-                      onClick={onLogout}
-                      className="px-6 py-2.5 text-xs font-bold tracking-widest uppercase text-[#3a352a] border border-[#c2b9a7] bg-transparent rounded hover:bg-[#c2b9a7]/20 hover:text-red-500 transition duration-300 shadow-sm text-center"
-                    >
-                      Logout
-                    </button>
-
-                  </div>
-
-                ) : (
-
-                  <Link
-                    href="/auth/login"
-                    className="text-[#3a352a] font-bold tracking-widest text-xs uppercase hover:text-[#8b3a2b] transition-colors"
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold uppercase text-[#596643]">
+                    Hi, {user.user_metadata?.full_name || "User"}
+                  </span>
+                  <button
+                    onClick={onLogout}
+                    className="px-6 py-2.5 text-xs font-bold tracking-widest uppercase text-[#3a352a] border border-[#c2b9a7] bg-transparent rounded hover:bg-[#c2b9a7]/20 hover:text-red-500 transition duration-300 shadow-sm text-center"
                   >
-                    Login
-                  </Link>
-
-                )}
-              <button className="px-6 py-2.5 text-xs font-bold tracking-widest uppercase text-[#e0d7c5] bg-[#596643] rounded hover:bg-[#3a352a] hover:-translate-y-0.5 transition-all duration-300 shadow-md shadow-[#596643]/20">
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  className="text-[#3a352a] font-bold tracking-widest text-xs uppercase hover:text-[#8b3a2b] transition-colors"
+                >
+                  Login
+                </Link>
+              )}
+              
+              <Link 
+                href="/menu" 
+                className="px-6 py-2.5 text-xs font-bold tracking-widest uppercase text-[#e0d7c5] bg-[#596643] rounded hover:bg-[#3a352a] hover:-translate-y-0.5 transition-all duration-300 shadow-md shadow-[#596643]/20"
+              >
                 Order Now
-              </button>
+              </Link>
             </div>
             
             {/* Mobile Hamburger Toggle */}
@@ -153,38 +205,55 @@ export default function Header({
         }`}
       >
         <nav className="flex flex-col items-center space-y-6 px-4">
-          <a href="#" onClick={() => setIsMobileMenuOpen(false)} className="text-[#8b3a2b] font-bold tracking-widest uppercase text-sm">Discover</a>
-          <a href="#specials" onClick={() => setIsMobileMenuOpen(false)} className="text-[#3a352a] hover:text-[#8b3a2b] font-medium tracking-widest uppercase text-sm transition">Specials</a>
-          <a href="#menu" onClick={() => setIsMobileMenuOpen(false)} className="text-[#3a352a] hover:text-[#8b3a2b] font-medium tracking-widest uppercase text-sm transition">Menu</a>
-          <a href="#visit" onClick={() => setIsMobileMenuOpen(false)} className="text-[#3a352a] hover:text-[#8b3a2b] font-medium tracking-widest uppercase text-sm transition">Visit Us</a>
+          <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-[#3a352a] hover:text-[#8b3a2b] font-medium tracking-widest uppercase text-sm transition">
+            Discover
+          </Link>
+          <Link href="/menu" onClick={() => setIsMobileMenuOpen(false)} className="text-[#8b3a2b] font-bold tracking-widest uppercase text-sm">
+            Menu
+          </Link>
+          
+          {/* MOBILE VISIT US LINK WITH SAME INTERACTIVE SCROLL EVENT */}
+          <Link 
+            href={isHomePage ? '#visit' : '/#visit'} 
+            onClick={handleVisitClick}
+            className="text-[#3a352a] hover:text-[#8b3a2b] font-medium tracking-widest uppercase text-sm transition"
+          >
+            Visit Us
+          </Link>
           
           <div className="w-full pt-6 border-t border-[#c2b9a7]/40 flex flex-col items-center gap-4">
-            <button className="flex items-center gap-2 text-[#596643] hover:text-[#8b3a2b] font-bold tracking-widest uppercase text-sm transition">
+            {/* Palitan ang <button> ng <Link> */}
+            <Link 
+              href="/cart" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-[#596643] hover:text-[#8b3a2b] font-bold tracking-widest uppercase text-sm transition"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
               View Cart ({cartCount})
-            </button>
+            </Link>
             {user ? (
-
               <button
-                onClick={onLogout}
+                onClick={() => { onLogout?.(); setIsMobileMenuOpen(false); }}
                 className="w-full max-w-xs px-6 py-4 text-sm font-bold tracking-widest uppercase text-red-500 border border-red-200 bg-white rounded hover:bg-red-50 transition duration-300 shadow-sm"
               >
                 Logout
               </button>
-
             ) : (
-
               <Link
                 href="/auth/login"
+                onClick={() => setIsMobileMenuOpen(false)}
                 className="w-full max-w-xs px-6 py-4 text-sm font-bold tracking-widest uppercase text-[#3a352a] border border-[#c2b9a7] bg-transparent rounded hover:bg-[#c2b9a7]/20 transition duration-300 shadow-sm text-center"
               >
                 Login
               </Link>
-
             )}
-            <button className="w-full max-w-xs px-6 py-4 text-sm font-bold tracking-widest uppercase text-[#e0d7c5] bg-[#596643] rounded hover:bg-[#3a352a] transition duration-300 shadow-md">
+            <Link 
+              href="/menu" 
+              onClick={() => setIsMobileMenuOpen(false)} 
+              className="w-full max-w-xs px-6 py-4 text-sm font-bold tracking-widest uppercase text-[#e0d7c5] bg-[#596643] rounded hover:bg-[#3a352a] transition duration-300 shadow-md text-center"
+            >
               Order Now
-            </button>
+            </Link>
           </div>
         </nav>
       </div>

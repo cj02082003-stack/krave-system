@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { CartProvider } from '@/context/CartContext';
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,7 +21,10 @@ export default function RootLayout({
       <body 
         className={`${inter.className} bg-stone-50 text-stone-900 antialiased selection:bg-[#e4e7dd] selection:text-[#596643]`}
       >
+        <CartProvider>
+          <Toaster position="bottom-right" />
         {children}
+        </CartProvider>
       </body>
     </html>
   );
